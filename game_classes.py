@@ -18,44 +18,45 @@ class Game(object):
         self.round = 9 # start at round 9 and count down
         self.current_player = 0 # start with player 0
         self.players = []
-        self.available_tiles = [] # set of tiles that are not in the players' hands or on the board
-        self.chains = [[] for i in range(6)]
+        self.tiles_in_vault = [] # tiles that are not in the players' hands or already played
+        self.board = [[] for i in range(3)] # max 3 branches
 
-    def create_tile_set(self):
-        for tile in range(0,10):
-            for i in range(tile,10):
-                self.available_tiles.append(Tile(tile,i))
-            
-        # add the spinner tiles, one for each number
-        for i in range(0,10):
-            self.available_tiles.append(Tile('spinner',i))
+    def create_tile_set(self, max_tile=9, include_spinners=True) -> None:
+        for tile in range(0, max_tile+1):
+            for i in range(tile, max_tile+1):
+                self.tiles_in_vault.append(Tile(tile,i))
         
-        # add the double spinner tile
-        self.available_tiles.append(Tile('spinner','spinner'))
+        if include_spinners:
+            # add the spinner tiles, one for each number
+            for i in range(0, max_tile+1):
+                self.tiles_in_vault.append(Tile('spinner',i))
+            
+            # add the double spinner tile
+            self.tiles_in_vault.append(Tile('spinner','spinner'))
 
-    def deal_tiles(self, num_tiles=7):
+    def deal_tiles(self, num_tiles=3) -> None:
         for i in range(num_tiles):
             for player in self.players:
-                player.draw_tile(self.available_tiles)
+                player.draw_tile(self.tiles_in_vault)
 
-    def shuffle_tiles(self):
-        np.random.shuffle(self.available_tiles)
+    def shuffle_tiles(self) -> None:
+        np.random.shuffle(self.tiles_in_vault)
 
-    def add_tile_to_chain(self,chain,tile):
+    def add_tile_to_branch(self,branch,tile) -> None:
         # check if the move is valid
-        if len(self.chains[chain]) == 0:
-            self.chains[chain].append(tile)
+        if len(self.board[branch]) == 0:
+            self.board[branch].append(tile)
         else:
-            if tile.num1 == self.chains[chain][0].num1 or tile.num2 == self.chains[chain][0].num1:
-                self.chains[chain].insert(0,tile)
-            elif tile.num1 == self.chains[chain][-1].num2 or tile.num2 == self.chains[chain][-1].num2:
-                self.chains[chain].append(tile)
+            if tile.num1 == self.board[branch][0].num1 or tile.num2 == self.board[branch][0].num1:
+                self.board[branch].insert(0,tile)
+            elif tile.num1 == self.board[branch][-1].num2 or tile.num2 == self.board[branch][-1].num2:
+                self.board[branch].append(tile)
             else:
                 raise ValueError('Invalid move')
             
-    def find_valid_moves(self,tile):
+    def find_valid_moves(self,tile) -> list:
         valid_moves = []
-        for i, chain in enumerate(self.chains):
+        for i, chain in enumerate(self.board):
             if len(chain) == 0:
                 valid_moves.append(i)
             elif tile.num1 == chain[0].num1 or tile.num2 == chain[0].num1:
@@ -63,12 +64,37 @@ class Game(object):
             elif tile.num1 == chain[-1].num2 or tile.num2 == chain[-1].num2:
                 valid_moves.append(i)
         return valid_moves
-    
-    def get_chains(self):
+
+    def get_tiles_in_vault(self) -> list:
+        return self.tiles_in_vault
+
+    def reset():
         pass
 
-    def get_available_tiles(self):
-        return self.available_tiles
+    def next_player(self) -> None:
+        print('The current player is:',self.current_player)
+        self.current_player = (self.current_player + 1) % len(self.players)
+
+    def start_game(self, players) -> None:
+        # find highest double tile and the player who has it
+        highest_double = 0
+        player_with_highest_double = None
+        for player in players:
+            for tile in player.hand:
+                if tile.num1 == tile.num2 and tile.num1 > highest_double:
+                    highest_double = tile.num1
+                    player_with_highest_double = player
+        
+        # set the current player to the one with the highest double
+        self.current_player = player_with_highest_double
+
+        highest_double = player.play_tile(tile)
+
+        print('Player',player.name,'has the highest double tile:',highest_double.num1,highest_double.num2)
+
+        # play the highest double tile and start the game
+        self.board[0].append(highest_double)   
+
 
 class Player(object):
     def __init__(self,name):
