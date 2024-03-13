@@ -1,11 +1,11 @@
-from game_classes import Tile, Board, Player
+from game_classes import Tile, Game, Player
 import numpy as np
 import random
 import copy
 
 def main():
 
-    board = Board()
+    board = Game()
     board.create_tile_set()
     print('There are',len(board.available_tiles),'tiles in the set')
 

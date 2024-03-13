@@ -13,7 +13,7 @@ class Tile(object):
     def __str__(self):
         return str(self.num1)+'-'+str(self.num2)    
 
-class Board(object):
+class Game(object):
     def __init__(self):
         self.round = 9 # start at round 9 and count down
         self.current_player = 0 # start with player 0
