@@ -1,4 +1,6 @@
 from game_classes import Tile, Game, Player
+import numpy as np
+
 
 def main():
 
