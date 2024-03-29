@@ -1,11 +1,10 @@
 # Simplified Dominoes Variation for RL
 
-Here's an [article](https://medium.com/@axegggl/dominoes-game-with-simple-ai-in-python-df7f62feab4) on creating a Dominoes AI, perhaps this could be a model for our agent to beat?
+Relevant [article](https://medium.com/@axegggl/dominoes-game-with-simple-ai-in-python-df7f62feab4).
 
-Here's a [pygame version of dominoes](https://www.pygame.org/project-Dominos-1119-.html) we could use for a template for an interface if we want one.  I downloaded the code and got it working.
+Revelant [pygame version of dominoes](https://www.pygame.org/project-Dominos-1119-.html).
 
 # Rules
----
 ## Tiles
 - 00, 01, 02, 03, 11, 12, 13, 22, 23, 33 (Count 10)
 
@@ -24,7 +23,7 @@ Here's a [pygame version of dominoes](https://www.pygame.org/project-Dominos-111
 4. Episode ends when one player has empty hand. Score is total value of tiles left in hand 
 5. Winner has lowest score
 
-Board Example:
+## Board Example:
 ```
 Board: 3|3
 Player 1: plays 3|2
