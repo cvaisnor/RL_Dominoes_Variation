@@ -100,7 +100,7 @@ class Player:
         self.max_turns = max_turns
         Player.id += 1
 
-    def reset_for_new_round(self):
+    def reset_hand(self):
         self.hand = []
 
     def play_turn(self):
@@ -115,7 +115,7 @@ class Player:
         # get available actions
         available_actions = self.get_available_actions()
         if self.verbose:
-            print(f'\nPlayer {self.id} turn Round: {self.game.round}\n'
+            print(f'\nPlayer {self.id} turn - Round: {self.game.round}\n'
                   f'Boneyard: {self.game.boneyard_to_str()}\n'
                   f'{self.game.board}'
                   f'Hand: {self.hand_to_string()}\n'
@@ -265,7 +265,6 @@ class Board:
         self.exposed_double = None
         self.exposed_double_count = 0
 
-
     def receive_tile(self, tile, end_value):
         # TODO needs to account for spinners
         # TODO discuss if we need to account for tile played with spinner exposed, this is legal but unwise
@@ -349,7 +348,7 @@ class Game(object):
         self.boneyard = self.tile_master.copy()
         self.board = Board(self, self.allow_chickenfeet)
         self.players = [Player(self, p['strategy'], p['verbose']) for p in params['players']]
-        self.init_hand_size = 7
+        self.init_hand_size = params['initial_hand_size']
 
         self.max_round = self.max_pips  # start at round 9 and count down
         self.round = self.max_round
@@ -360,12 +359,6 @@ class Game(object):
 
         self.current_player = self.players[random.randint(0, self.num_players - 1)]
 
-        self.deal()
-        print('Setting up game and Dealing...')
-        print(self)
-
-        self.play_game()
-
     def reset(self):
         pass
 
@@ -375,71 +368,80 @@ class Game(object):
     def get_state(self):
         pass
 
-    def play_game(self):
+    def play_game(self, verbose=False) -> None:
         for self.round in range(self.max_round, self.min_round - 1, -1):
-            round_scores = self.play_round()
+            round_scores = self.play_round(verbose=verbose)
             next_player_index = random.choice(
                 [i for i, v in enumerate(round_scores) if v == max(round_scores)])
             self.scores_by_round[self.round] = round_scores
             self.current_player = self.players[next_player_index]
         self.total_scores = np.sum(self.scores_by_round, axis=0)
 
-    def play_round(self):
-        """
-        Method to play a round of the Spinner
-        :return: scores for all players from this roundd
-        """
-        print(f'Starting round {self.round}')
+    def reset_for_new_round(self) -> None:
         self.boneyard = self.tile_master.copy()
         self.board.reset_for_new_round()
         for p in self.players:
-            p.reset_for_new_round()
-        print(self)
+            p.reset_hand()
+
+    def play_round(self, verbose=False) -> list:
+        """
+        Method to play a round of the Spinner
+        :return: scores for all players from this round
+        """
+        self.reset_for_new_round()
+        self.deal(verbose=verbose)
+
+        # check both players hand for the double value of the round
+        for p in self.players:
+            for t in p.hand:
+                if t.is_double and t.low == self.round:
+                    self.current_player = p
+                    break
+            if self.current_player:
+                break
+        
+        print(self) # printing initial game state after selecting starting player
+        print(f'Starting round {self.round}')
 
         round_done = False
-        boneyard_empty_draws = 0
+        # boneyard_empty_draws = 0
         while not round_done:
-            tiles_in_hand_before_turn = len(self.current_player.hand)
             self.current_player.play_turn()
-            tiles_in_hand_after_turn = len(self.current_player.hand)
-
-            # stop round if no tiles in player hand or if series of empty draws means stalemate.
-            if tiles_in_hand_after_turn == tiles_in_hand_before_turn:
-                boneyard_empty_draws += 1
-            elif tiles_in_hand_after_turn > tiles_in_hand_before_turn:
-                boneyard_empty_draws = 0
-            if tiles_in_hand_after_turn == 0 or boneyard_empty_draws >= self.num_players:
+            if len(self.current_player.hand) == 0:
                 round_done = True
             self.next_player()
         return [p.get_score() for p in self.players]
 
-    def next_player(self):
+    def next_player(self) -> None:
         current_player_index = self.current_player.id
         next_player_index = (current_player_index + 1) % self.num_players
         self.current_player = self.players[next_player_index]
 
-    def draw_tile(self):
+    def draw_tile(self, verbose=False) -> Tile:
         # Take a tile form boneyard and return it.  If boneyard empty, return None
         if self.boneyard:
-            return self.boneyard.pop(random.randint(0, len(self.boneyard) - 1))
+            if verbose:
+                print(f'Drawing tile from boneyard. {len(self.boneyard) - 1} tiles left.')
+            return self.boneyard.pop()
         else:
-            print("Boneyard empty!!!!")
+            if verbose:
+                print("Boneyard was empty when draw_tile was called.")
             return None
 
-    def deal(self):
+    def deal(self, verbose=False, ):
         for player in self.players:
-            player.hand = [self.draw_tile() for _ in range(self.init_hand_size)]
+            player.hand = [self.draw_tile(verbose=verbose) for _ in range(self.init_hand_size)]
             player.sort_hand()
 
     def boneyard_to_str(self):
-        return ' '.join(map(str, self.boneyard)) if self.boneyard else 'Empty'
+        return ' '.join(map(str, self.boneyard))
 
     def __str__(self):
         hands = ''
         for p in self.players:
             hands += f'Player {p.id} Hand: {p.hand_to_string()}\n'
 
-        return (f'Game Status:\n'
+        return (f'---Game Status---\n'
                 f'Current Player: {self.current_player.id}\n'
                 f'Boneyard: {self.boneyard_to_str()}\n'
                 f'{self.board}'
