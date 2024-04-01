@@ -3,23 +3,64 @@
 import numpy as np
 
 class Tile(object):
-    def __init__(self,num1,num2):
-        self.num1=num1
-        self.num2=num2
-        self.is_spinner = False
-        if num1 == 'spinner' or num2 == 'spinner':
-            self.is_spinner = True
+    def __init__(self, high, low):
+        self.num1=high
+        self.num2=low
+        self.is_spinner = True if (high == 'S' or low == 'S') else False
+        self.value = 0
 
+        # Set value
+        if high == 'S' and low == 'S':
+            self.value = 20
+        elif high == 'S':
+            self.value = 10 + self.num2
+        elif low == 'S':
+            self.value = 10 + self.num1
+        else:
+            self.value = high + low
     def __str__(self):
-        return str(self.num1)+'-'+str(self.num2)    
+        return str(self.num1) + '|' + str(self.num2)
+
+class Deck:
+    def __init__(self, max_pips = 9, spinners = True):
+        self.tiles = []
+        for low in range(max_pips + 1):
+            for high in range(low, max_pips + 1):
+                self.tiles.append(Tile(high, low))
+
+        if spinners:
+            for i in range(max_pips + 1):
+                self.tiles.append(Tile('S', i))
+            self.tiles.append(Tile('S', 'S'))
+
+class Player:
+    def __init__(self, game, strategy):
+        self.game = game
+        self.strategy = strategy
+        self.hand = []
+
+
+    def play(self):
+        if len(game.board) == 0:
+            if game.round in
+
+        if len(self.hand) == 0:
+            game.round_done == True
+
+    def choose_action(self):
+        return action
+
+    def receive_tile(self, card):
+
 
 class Game(object):
-    def __init__(self):
+    def __init__(self, num_players = 2):
         self.round = 9 # start at round 9 and count down
         self.current_player = 0 # start with player 0
-        self.players = []
+        self.players = [Player() for p in range(num_players)]
         self.tiles_in_vault = [] # tiles that are not in the players' hands or already played
         self.board = [[] for i in range(3)] # max 3 branches
+        self.done = False
 
     def create_tile_set(self, max_tile=9, include_spinners=True) -> None:
         for tile in range(0, max_tile+1):
@@ -29,10 +70,10 @@ class Game(object):
         if include_spinners:
             # add the spinner tiles, one for each number
             for i in range(0, max_tile+1):
-                self.tiles_in_vault.append(Tile('spinner',i))
+                self.tiles_in_vault.append(Tile('S',i))
             
             # add the double spinner tile
-            self.tiles_in_vault.append(Tile('spinner','spinner'))
+            self.tiles_in_vault.append(Tile('S','S'))
 
     def deal_tiles(self, num_tiles=3) -> None:
         for i in range(num_tiles):
@@ -114,7 +155,7 @@ class Player(object):
         for tile in self.hand:
             if tile.is_spinner:
                 self.score += 10
-                if tile.num1 == 'spinner':
+                if tile.num1 == 'S':
                     self.score += tile.num2
                 else:
                     self.score += tile.num1
