@@ -78,6 +78,17 @@ class TileSet:
 
 
 class Player:
+    """
+    Represents a player in the game.  Game be an AI, human, or agent depending on strategy
+    Attributes:
+        game (Game): the game
+        strategy (str): the strategy deployed by the player.  Can be 'random', 'play_high', 'play_low',
+                        'human' or 'agent'
+        hand (Hand): the hand of the player, list of Tile objects
+        verbose: flag for output
+        id:  the player id
+        max_turns: limit on maximum turns for a player for debugging.  Set to None for no limit.
+    """
     id = 0
 
     def __init__(self, game, strategy, verbose=False, max_turns=None):
@@ -89,20 +100,28 @@ class Player:
         self.max_turns = max_turns
         Player.id += 1
 
+    def reset_for_new_round(self):
+        self.hand = []
+
     def play_turn(self):
 
+        # limit turns for debugging
         if self.max_turns:
             if self.max_turns>1:
                 self.max_turns -= 1
             elif self.max_turns==1:
                 quit()
 
+        # get available actions
         available_actions = self.get_available_actions()
         if self.verbose:
-            print(f'\nPlayer {self.id} turn\n'
+            print(f'\nPlayer {self.id} turn Round: {self.game.round}\n'
+                  f'Boneyard: {self.game.boneyard_to_str()}\n'
                   f'{self.game.board}'
                   f'Hand: {self.hand_to_string()}\n'
                   f'Available Actions: {available_actions}')
+
+        # choose an action if possible or draw a tile
         if available_actions:
             action = self.choose_action(available_actions)
             self.place_tile_from_hand(action)
@@ -116,13 +135,19 @@ class Player:
                       f'New Hand: {self.hand_to_string()}\n')
 
     def get_available_actions(self):
+        """
+        Method to search players hand for playable tiles given the playable exposed ends of the board
+        :return: List of actions that are possibel given a player's hand and the board's exposed tiles
+                    Actions are tuples containing the index of a playable tile in the players hand
+                    and the value of the end of the tile to be played'
+        """
         available_actions = []
-        if len(self.game.board.tiles) == 0:
+        if len(self.game.board.tiles) == 0:             # for empty board, find r|r or S|S
             r = self.game.round
             for index, tile in enumerate(self.hand):
                 if tile.is_double and tile.high in [r, 'S']:
                     available_actions.append((index, r))
-        else:
+        else:                                           # after initial tile played
             usable_exposed = self.game.board.get_usable_exposed_ends()
             for index, tile in enumerate(self.hand):
                 if tile.low in usable_exposed:
@@ -136,14 +161,27 @@ class Player:
         return available_actions
 
     def draw_tile_to_hand(self):
+        """
+        This method removes a tile from the boneyard, puts it in the players hand and sort the
+        players hand by tile index.  If the boneyard is empty, prints a message to the console
+        :return: None
+        """
         new_tile = self.game.draw_tile()
         if new_tile:
             self.hand.append(new_tile)
+            self.sort_hand()
         else:
             print('Boneyard empty!!!!!!!!!!')
-        self.sort_hand()
+
 
     def place_tile_from_hand(self, action):
+        """
+        This method removes a tile from the players hand and sends it to the board with the end to play on
+        using  the receive_tile method for the board.
+        :param action: tuple specifiy the index of the tile to play form the players hand and the exposed end
+        oof the board on which the tile should be placed.
+        :return: None
+        """
         if len(self.hand) == 0:
             raise Exception(f'Player hand is empty, cannot place_tile_from_hand')
         tile_to_play = self.hand.pop(action[0])
@@ -151,34 +189,52 @@ class Player:
         self.game.board.receive_tile(tile_to_play, value_of_end_to_play)
 
     def choose_action(self, action_list):
+        """
+        This method takes a list of available actions and chooses one according to the assigned strategy for the player
+        :param action_list:  A list of availabe actions for the players turn.  Actions are passed as tuples of
+                                (index, end) where index is the index of the tile in the players hand
+                                and end is the exposed end of the board on whcih the tile is to be played.
+        :return: action tuple as specified above
+        """
+
+        # if only one option avaalable, return it
         if len(action_list) == 1:
             return action_list[0]
 
-        if self.strategy == 'random':
-            return random.choice(action_list)
+        match self.strategy:
 
-        if self.strategy == 'play_high':
-            action_tile_values = [self.hand[i].value for i, _ in action_list]
-            indices = [index for index, value in enumerate(action_tile_values) if value == max(action_tile_values)]
-            max_actions = [action_list[i] for i in indices]
-            return random.choice(max_actions)
+            case 'random':
+                return random.choice(action_list)
 
-        if self.strategy == 'play_low':
-            action_tile_values = [self.hand[i].value for i, _ in action_list]
-            indices = [index for index, value in enumerate(action_tile_values) if value == min(action_tile_values)]
-            min_actions = [action_list[i] for i in indices]
-            return random.choice(min_actions)
+            case 'play_high':
+                action_tile_values = [self.hand[i].value for i, _ in action_list]
+                indices = [index for index, value in enumerate(action_tile_values) if value == max(action_tile_values)]
+                max_actions = [action_list[i] for i in indices]
+                return random.choice(max_actions)
 
-        if self.strategy == 'manual':
-            # print(f'Available ends: {self.game.board.exposed_ends}')
-            # print(f'Player Hand is {self.hand_to_string()}')
-            output = ' '.join([f'{i}-{self.hand[a[0]]}-[{a[1]}]  ' for i, a in enumerate(action_list)])
-            print(f'Available actions: {output}')
-            while True:
-                choice = int(input('Please enter index of chosen available action: '))
-                if choice in list(range(len(action_list))):
-                    return action_list[choice]
-                print(f'Invalid choice. Please try again.')
+            case 'play_low':
+                action_tile_values = [self.hand[i].value for i, _ in action_list]
+                indices = [index for index, value in enumerate(action_tile_values) if value == min(action_tile_values)]
+                min_actions = [action_list[i] for i in indices]
+                return random.choice(min_actions)
+
+            case 'human':
+                # print(f'Available ends: {self.game.board.exposed_ends}')
+                # print(f'Player Hand is {self.hand_to_string()}')
+                output = ' '.join([f'{i}-{self.hand[a[0]]}-[{a[1]}]  ' for i, a in enumerate(action_list)])
+                print(f'Available actions: {output}')
+                while True:
+                    choice = int(input('Please enter index of chosen available action: '))
+                    if choice in list(range(len(action_list))):
+                        return action_list[choice]
+                    print(f'Invalid choice. Please try again.')
+
+            case 'agent':
+                pass
+                # TODO need to accomodate agent
+
+            case _:
+                raise ValueError(f'Undefined player strategy {self.strategy}')
 
     def get_score(self):
         values = [t.value for t in self.hand]
@@ -188,7 +244,7 @@ class Player:
         self.hand.sort(key=lambda t: t.id)
 
     def hand_to_string(self):
-        return ' '.join(map(str, self.hand))
+        return ' '.join(map(str, self.hand)) if self.hand else 'Empty'
 
     def __str__(self):
         return f'Player {self.id} Hand {self.hand_to_string()}'
@@ -202,6 +258,13 @@ class Board:
         self.exposed_double = None
         self.exposed_double_count = 0
         self.tiles_per_double = 3 if allow_chickenfeet else 1
+
+    def reset_for_new_round(self):
+        self.tiles = []
+        self.exposed_ends = []
+        self.exposed_double = None
+        self.exposed_double_count = 0
+
 
     def receive_tile(self, tile, end_value):
         # TODO needs to account for spinners
@@ -322,19 +385,30 @@ class Game(object):
         self.total_scores = np.sum(self.scores_by_round, axis=0)
 
     def play_round(self):
+        """
+        Method to play a round of the Spinner
+        :return: scores for all players from this roundd
+        """
+        print(f'Starting round {self.round}')
         self.boneyard = self.tile_master.copy()
-        self.board = Board(self, self.allow_chickenfeet)
-        self.players = [Player(self, p['strategy'], p['verbose']) for p in self.params['players']]
+        self.board.reset_for_new_round()
+        for p in self.players:
+            p.reset_for_new_round()
+        print(self)
 
         round_done = False
-        boneyard_empties = 0
+        boneyard_empty_draws = 0
         while not round_done:
+            tiles_in_hand_before_turn = len(self.current_player.hand)
             self.current_player.play_turn()
-            if len(self.current_player.hand) == 0 :
-                round_done = True
-            if len(self.boneyard) == 0:
-                boneyard_empties += 1
-            if boneyard_empties >= 10:
+            tiles_in_hand_after_turn = len(self.current_player.hand)
+
+            # stop round if no tiles in player hand or if series of empty draws means stalemate.
+            if tiles_in_hand_after_turn == tiles_in_hand_before_turn:
+                boneyard_empty_draws += 1
+            elif tiles_in_hand_after_turn > tiles_in_hand_before_turn:
+                boneyard_empty_draws = 0
+            if tiles_in_hand_after_turn == 0 or boneyard_empty_draws >= self.num_players:
                 round_done = True
             self.next_player()
         return [p.get_score() for p in self.players]
@@ -358,7 +432,7 @@ class Game(object):
             player.sort_hand()
 
     def boneyard_to_str(self):
-        return ' '.join(map(str, self.boneyard))
+        return ' '.join(map(str, self.boneyard)) if self.boneyard else 'Empty'
 
     def __str__(self):
         hands = ''

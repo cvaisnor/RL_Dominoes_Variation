@@ -5,9 +5,9 @@ import numpy as np
 def main():
 
 
-    params = {'max_pips':           5,
+    params = {'max_pips':           9,
               'spinners':           False,
-              'allow_chickenfeet':  False,
+              'allow_chickenfeet':  False,      # TODO debug chickenfeet
               'tiles_per_double':   1,
               'initial_hand_size':  7,
               'end_round':          0,
