@@ -403,8 +403,24 @@ class Game(object):
         print(self) # printing initial game state after selecting starting player
         print(f'Starting round {self.round}')
 
-        round_done = False
+        ### Harris method to check for end game ###
         # boneyard_empty_draws = 0
+        # while not round_done:
+        #     tiles_in_hand_before_turn = len(self.current_player.hand)
+        #     self.current_player.play_turn()
+        #     tiles_in_hand_after_turn = len(self.current_player.hand)
+
+        #     # stop round if no tiles in player hand or if series of empty draws means stalemate.
+        #     if tiles_in_hand_after_turn == tiles_in_hand_before_turn:
+        #         boneyard_empty_draws += 1
+        #     elif tiles_in_hand_after_turn > tiles_in_hand_before_turn:
+        #         boneyard_empty_draws = 0
+        #     if tiles_in_hand_after_turn == 0 or boneyard_empty_draws >= self.num_players:
+        #         round_done = True
+        #     self.next_player()
+        ### ----------------------------------- ###
+
+        round_done = False
         while not round_done:
             self.current_player.play_turn()
             if len(self.current_player.hand) == 0:

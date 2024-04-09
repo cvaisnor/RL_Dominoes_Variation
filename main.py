@@ -1,4 +1,4 @@
-from simple_game_classes import Game
+from classes import Game
 import numpy as np
 
 
