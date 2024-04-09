@@ -20,8 +20,10 @@ def main():
     print(params)
     print('-'*50)
 
-    game.play_round(verbose=True) # easier to debug game logic for single round
+    score_per_player = game.play_round(verbose=True) # easier to debug game logic for single round
     print('Round Finished')
+    print('Scores per player')
+    print(score_per_player)
 
     # game.play_game(verbose=True) # this works, lot of output
 

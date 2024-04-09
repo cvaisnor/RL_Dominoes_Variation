@@ -119,7 +119,7 @@ class Player:
                   f'Boneyard: {self.game.boneyard_to_str()}\n'
                   f'{self.game.board}'
                   f'Hand: {self.hand_to_string()}\n'
-                  f'Available Actions: {available_actions}')
+                  f'Available Actions (Hand Index, Tile Value): {available_actions}')
 
         # choose an action if possible or draw a tile
         if available_actions:
