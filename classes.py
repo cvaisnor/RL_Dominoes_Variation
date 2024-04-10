@@ -257,6 +257,7 @@ class Board:
         self.exposed_ends = []
         self.exposed_double = None
         self.exposed_double_count = 0
+        self.allow_chickenfeet = allow_chickenfeet
         self.tiles_per_double = 3 if allow_chickenfeet else 1
 
     def reset_for_new_round(self):
@@ -282,7 +283,7 @@ class Board:
             if tile.low not in [r, 'S'] and tile.high not in [r, 'S']:
                 raise Exception(f'Receive tile error, round {r} tile {len(self.tiles)} must have {r} or S end, passed tile is {tile}')
             self.add_tile_adjust_exposed_ends(tile, end_value)
-            if len(self.tiles) == 3:
+            if len(self.tiles) == 3 and self.allow_chickenfeet:
                 self.exposed_ends += [r, r]
 
         else:  # fourth tile or later
@@ -365,7 +366,7 @@ class Game(object):
     def execute_action(self):
         pass
 
-    def get_state(self):
+    def get_state(self, state_type='basic'):
         pass
 
     def play_game(self, verbose=False) -> None:
@@ -438,7 +439,7 @@ class Game(object):
         if self.boneyard:
             if verbose:
                 print(f'Drawing tile from boneyard. {len(self.boneyard) - 1} tiles left.')
-            return self.boneyard.pop()
+            return self.boneyard.pop(random.randint(0, len(self.boneyard) - 1))
         else:
             if verbose:
                 print("Boneyard was empty when draw_tile was called.")
