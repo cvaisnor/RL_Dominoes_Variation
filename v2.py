@@ -40,8 +40,8 @@ class Player:
 
 
 class GameEnvironment:
-    def __init__(self, lower_bound=0, upper_bound=3):
-        self.players = [Player(i) for i in range(2)]
+    def __init__(self, lower_bound=0, upper_bound=3, num_players=2):
+        self.players = [Player(i) for i in range(num_players)]
         self.boneyard = []
         self.board = []
         self.current_state = [None, None]
@@ -81,10 +81,8 @@ class GameEnvironment:
         return self.current_state
 
     def switch_player(self):
-        if self.current_player == 0:
-            self.current_player = 1
-        elif self.current_player == 1:
-            self.current_player = 0
+        # modulo switch between up to 3 players
+        self.current_player = (self.current_player + 1) % len(self.players)
 
     def execute_action(self, action: int) -> tuple[int, int, bool]:
         '''The function removes the tile from the player's hand and adds it the board at the location where the tile matches the end of the board.
@@ -124,8 +122,8 @@ class GameEnvironment:
         while not game_over:
             print('Environment State:')
             print(f"Player {self.current_player}'s turn")
-            print('Player 0 Hand: ', self.players[0].hand)
-            print('Player 1 Hand: ', self.players[1].hand)
+            for i, player in enumerate(self.players):
+                print(f'Player {i} hand: {player.hand}')
             print("Board: ", self.board)
             # print("Boneyard: ", self.boneyard)
             print("Current State: ", self.current_state)
@@ -153,7 +151,6 @@ class GameEnvironment:
                 break
 
             self.switch_player()
-
 
 
 def main():
