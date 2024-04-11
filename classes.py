@@ -99,19 +99,13 @@ class Player:
         self.id = Player.id
         self.max_turns = max_turns
         Player.id += 1
+        self.actions = [0, 1, 2]  # 0 = random, 1 = play low, 2 = play high
 
     def reset_hand(self):
         self.hand = []
 
     def play_turn(self):
-
-        # limit turns for debugging
-        if self.max_turns:
-            if self.max_turns>1:
-                self.max_turns -= 1
-            elif self.max_turns==1:
-                quit()
-
+        
         # get available actions
         available_actions = self.get_available_actions()
         if self.verbose:
@@ -137,7 +131,7 @@ class Player:
     def get_available_actions(self):
         """
         Method to search players hand for playable tiles given the playable exposed ends of the board
-        :return: List of actions that are possibel given a player's hand and the board's exposed tiles
+        :return: List of actions that are possible given a player's hand and the board's exposed tiles
                     Actions are tuples containing the index of a playable tile in the players hand
                     and the value of the end of the tile to be played'
         """
@@ -173,7 +167,6 @@ class Player:
         else:
             print('Boneyard empty!!!!!!!!!!')
 
-
     def place_tile_from_hand(self, action):
         """
         This method removes a tile from the players hand and sends it to the board with the end to play on
@@ -190,51 +183,16 @@ class Player:
 
     def choose_action(self, action_list):
         """
-        This method takes a list of available actions and chooses one according to the assigned strategy for the player
-        :param action_list:  A list of availabe actions for the players turn.  Actions are passed as tuples of
-                                (index, end) where index is the index of the tile in the players hand
-                                and end is the exposed end of the board on whcih the tile is to be played.
-        :return: action tuple as specified above
         """
+
+        # action list is a tuple of (left tile value, right tile value)
 
         # if only one option avaalable, return it
         if len(action_list) == 1:
             return action_list[0]
+        
 
-        match self.strategy:
-
-            case 'random':
-                return random.choice(action_list)
-
-            case 'play_high':
-                action_tile_values = [self.hand[i].value for i, _ in action_list]
-                indices = [index for index, value in enumerate(action_tile_values) if value == max(action_tile_values)]
-                max_actions = [action_list[i] for i in indices]
-                return random.choice(max_actions)
-
-            case 'play_low':
-                action_tile_values = [self.hand[i].value for i, _ in action_list]
-                indices = [index for index, value in enumerate(action_tile_values) if value == min(action_tile_values)]
-                min_actions = [action_list[i] for i in indices]
-                return random.choice(min_actions)
-
-            case 'human':
-                # print(f'Available ends: {self.game.board.exposed_ends}')
-                # print(f'Player Hand is {self.hand_to_string()}')
-                output = ' '.join([f'{i}-{self.hand[a[0]]}-[{a[1]}]  ' for i, a in enumerate(action_list)])
-                print(f'Available actions: {output}')
-                while True:
-                    choice = int(input('Please enter index of chosen available action: '))
-                    if choice in list(range(len(action_list))):
-                        return action_list[choice]
-                    print(f'Invalid choice. Please try again.')
-
-            case 'agent':
-                pass
-                # TODO need to accomodate agent
-
-            case _:
-                raise ValueError(f'Undefined player strategy {self.strategy}')
+        
 
     def get_score(self):
         values = [t.value for t in self.hand]
@@ -363,10 +321,16 @@ class Game(object):
     def reset(self):
         pass
 
-    def execute_action(self):
-        pass
+    def execute_action(self, action) -> tuple[list, int, bool]:
+        return (new_state, reward, done)
 
     def get_state(self, state_type='basic'):
+        pass
+
+    def get_number_of_states(self) -> int:
+        pass
+
+    def get_number_of_actions(self) -> int:
         pass
 
     def play_game(self, verbose=False) -> None:
@@ -403,23 +367,6 @@ class Game(object):
         
         print(self) # printing initial game state after selecting starting player
         print(f'Starting round {self.round}')
-
-        ### Harris method to check for end game ###
-        # boneyard_empty_draws = 0
-        # while not round_done:
-        #     tiles_in_hand_before_turn = len(self.current_player.hand)
-        #     self.current_player.play_turn()
-        #     tiles_in_hand_after_turn = len(self.current_player.hand)
-
-        #     # stop round if no tiles in player hand or if series of empty draws means stalemate.
-        #     if tiles_in_hand_after_turn == tiles_in_hand_before_turn:
-        #         boneyard_empty_draws += 1
-        #     elif tiles_in_hand_after_turn > tiles_in_hand_before_turn:
-        #         boneyard_empty_draws = 0
-        #     if tiles_in_hand_after_turn == 0 or boneyard_empty_draws >= self.num_players:
-        #         round_done = True
-        #     self.next_player()
-        ### ----------------------------------- ###
 
         round_done = False
         while not round_done:
