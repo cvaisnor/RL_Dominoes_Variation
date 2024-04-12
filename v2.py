@@ -81,7 +81,7 @@ class GameEnvironment:
         return self.current_state
 
     def switch_player(self):
-        # modulo switch between up to 3 players
+        # modulo switch between up to N players
         self.current_player = (self.current_player + 1) % len(self.players)
 
     def execute_action(self, action: int) -> tuple[int, int, bool]:
@@ -129,7 +129,7 @@ class GameEnvironment:
             print("Current State: ", self.current_state)
             
             valid_moves = self.players[self.current_player].find_valid_moves(self.current_state, self.board)
-            print('Valid Moves: ', valid_moves)
+            # print('Valid Moves: ', valid_moves)
             
             if not valid_moves:
                 print('No valid moves')
@@ -141,8 +141,6 @@ class GameEnvironment:
                 continue
             
             chosen_action = random.choice(valid_moves) 
-            
-            
             print()
             current_state, reward, game_over = self.execute_action(chosen_action)
             if game_over:
