@@ -6,6 +6,10 @@ class Player:
         self.hand = []
         self.actions = {'play_low': 0, 'play_random': 1, 'play_high': 2}
     
+    def sort_hand(self):
+        '''This sorts the player's hand in ascending order based on the sum of each inner list.'''
+        self.hand.sort(key=lambda x: x[0] + x[1])
+
     def draw_tile(self, boneyard):
         if boneyard:
             tile = random.choice(boneyard)
@@ -14,7 +18,7 @@ class Player:
 
     def find_valid_moves(self, game_state, board):
         valid_moves = []
-        
+
         # if the board is empty, find the highest double in the hand
         if not board:
             highest_double = -1
@@ -84,10 +88,10 @@ class GameEnvironment:
         # modulo switch between up to N players
         self.current_player = (self.current_player + 1) % len(self.players)
 
-    def execute_action(self, action: int) -> tuple[int, int, bool]:
+    def execute_action(self, action: int) -> tuple[list, int, bool]:
         '''The function removes the tile from the player's hand and adds it the board at the location where the tile matches the end of the board.
         Returns:
-            tuple[int, int, bool]: state(This is the exposed ends of the board), reward, done
+            tuple[list], int, bool]: state(the exposed ends of the board), reward, done
         '''
         # print('Inside execute_action:')
         player = self.players[self.current_player]
@@ -101,16 +105,13 @@ class GameEnvironment:
                 # check if the tile needs to be flipped
                 if tile[1] == ends[0]:
                     self.board.insert(0, tile)
-
                 else:
                     self.board.insert(0, [tile[1], tile[0]])
-
             elif tile[0] == ends[1] or tile[1] == ends[1]: # back of list
                 # check if the tile needs to be flipped
                 if tile[1] == ends[1]:
                     tile = [tile[1], tile[0]]    
                 self.board.append(tile)
-
             self.current_state = [self.board[0][0], self.board[-1][1]]
         if not player.hand: # If the player has no tiles left, the game is over
             return self.current_state, 100, True
@@ -123,33 +124,44 @@ class GameEnvironment:
             print('Environment State:')
             print(f"Player {self.current_player}'s turn")
             for i, player in enumerate(self.players):
-                print(f'Player {i} hand: {player.hand}')
-            print("Board: ", self.board)
+                # sort the hand
+                player.sort_hand()
+                # only print the current player's hand
+                if i == self.current_player:
+                    print(f'Player {i} Hand: {player.hand}')
+            # print("Board: ", self.board)
             # print("Boneyard: ", self.boneyard)
             print("Current State: ", self.current_state)
-            
             valid_moves = self.players[self.current_player].find_valid_moves(self.current_state, self.board)
-            # print('Valid Moves: ', valid_moves)
-            
             if not valid_moves:
-                print('No valid moves')
-                # draw a tile from the boneyard
-                print(f'Player {self.current_player} draws a tile from the boneyard')
-                print()
+                print(f'No valid moves, player {self.current_player} draws a tile')
                 self.players[self.current_player].draw_tile(self.boneyard)
-                self.switch_player() # switch player
-                continue
+                # resort the hand
+                self.players[self.current_player].sort_hand()
+                # check if the player can play the tile they drew
+                valid_moves = self.players[self.current_player].find_valid_moves(self.current_state, self.board)
+                if not valid_moves:
+                    print(f'Player {self.current_player} still cannot play, switching players')
+                    self.switch_player() # switch player
+                    continue
+            if len(valid_moves) == 1:
+                chosen_action = valid_moves[0]
             
-            chosen_action = random.choice(valid_moves) 
-            print()
+            #### Start Agent Step ####
+            if len(valid_moves) > 1:
+                print('Multiple valid moves, choosing based on Agent Policy')
+                chosen_action = random.choice(valid_moves) 
+
             current_state, reward, game_over = self.execute_action(chosen_action)
+            print(f'Action: {chosen_action} - Reward: {reward} - New State: {current_state}')
+            #### End Agent Step ####
+            
             if game_over:
                 print('Game Over')
                 print(f'Player {self.current_player} wins')
                 break
-
+            print()
             self.switch_player()
-
 
 def main():
     game = GameEnvironment()
