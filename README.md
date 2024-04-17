@@ -6,13 +6,15 @@ Revelant [pygame version of dominoes](https://www.pygame.org/project-Dominos-111
 
 # Rules
 ## Tiles
-- 00, 01, 02, 03, 11, 12, 13, 22, 23, 33 (Count 10)
+- Range [0-9, 0-9]
+- Example for [0-3]
+    - 00, 01, 02, 03, 11, 12, 13, 22, 23, 33 (Count 10)
 
 ## Players
-- 2 players
+- 2 - N
 
 ## Hands
-- 2 tiles per player
+- 2-9 tiles per player
 
 ## Rules
 1. Player who has highest double tile plays first
