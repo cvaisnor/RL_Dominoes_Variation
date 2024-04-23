@@ -56,18 +56,29 @@ class Spinner(object):
         self.play_until_need_agent_action()
         state = self.get_state()
         reward = self.get_reward()
-        print('-'*60)
-        print(f'Game reset. state: {state}, reward: {reward}, done: {self.game_done}')
-        print('-'*60)
+        if self.verbose:
+            print('-'*60)
+            print(f'Game reset. state: {state}, reward: {reward}, done: {self.game_done}')
+            print('-'*60)
         return state, reward, self.game_done
 
     def execute_action(self, agent_action):
         if self.current_player.strategy != 'agent':
             raise Exception('Cannot execute action unless current player is agent')
 
-        print(f'Executing action: {agent_action}')
+        if self.verbose:
+            print(f'Executing action: {agent_action}')
         if self.action_space_type == 'hrl':
             action_key = {0: 'play_low', 1: 'random', 2: 'play_high'}
+            agent_action = action_key[agent_action]
+        elif self.action_space_type == 'hl':
+            action_key = {0: 'play_low', 1: 'play_high'}
+            agent_action = action_key[agent_action]
+        elif self.action_space_type == 'h':
+            action_key = {0: 'play_high'}
+            agent_action = action_key[agent_action]
+        elif self.action_space_type == 'r':
+            action_key = {0: 'random'}
             agent_action = action_key[agent_action]
         self.current_player.play_turn(agent_action)
         self.update_game_and_round_done()
@@ -75,9 +86,10 @@ class Spinner(object):
         self.play_until_need_agent_action()
         state = self.get_state()
         reward = self.get_reward()
-        print('-'*60)
-        print(f'Action {agent_action} executed.  state: {state}, reward: {reward}, done: {self.game_done}')
-        print('-' * 60)
+        if self.verbose:
+            print('-'*60)
+            print(f'Action {agent_action} executed.  state: {state}, reward: {reward}, done: {self.game_done}')
+            print('-' * 60)
         return state, reward, self.game_done
 
     def play_until_need_agent_action(self):
@@ -86,25 +98,28 @@ class Spinner(object):
             self.update_game_and_round_done()
             self.next_player()
             if self.round_done and not self.game_done:
+                self.update_round_scores()
                 self.setup_new_round()
 
 
     def get_state(self, state_type='two_exposed_ends'):
-        if self.state_type == 'two_exposed_ends':
-            exp_ends = self.board.get_usable_exposed_ends()
-            match len(exp_ends):
-                case 0:
-                    return 110
-                case 1:
-                    return 100 + exp_ends[0]
-                case 2:
-                    return exp_ends[0] * 10 + exp_ends[1]
-                case _:
-                    raise Exception(f'Invalid state type, must be two exposed ends'
-                                    f'exposed_ends = {exp_ends}')
-
-        if state_type == 'vaisnorsamazingidea':
-            pass
+        match self.state_type:
+            case 'two_exposed_ends':
+                exp_ends = self.board.get_usable_exposed_ends()
+                match len(exp_ends):
+                    case 0:
+                        return 110
+                    case 1:
+                        return 100 + exp_ends[0]
+                    case 2:
+                        return exp_ends[0] * 10 + exp_ends[1]
+                    case _:
+                        raise Exception(f'Invalid state type, must be two exposed ends'
+                                        f'exposed_ends = {exp_ends}')
+            case 'one_state':
+                return 0
+            case _:
+                raise Exception(f'Invalid state type, {self.state_type} not defined.')
 
     def get_reward(self):
         if self.game_done and self.find_game_winner_index() == 0:
@@ -115,6 +130,12 @@ class Spinner(object):
         match self.action_space_type:
             case 'hrl':
                 return 3
+            case 'hl':
+                return 2
+            case 'h':
+                return 1
+            case 'r':
+                return 1
             case _:
                 raise Exception('Invalid action space type')
 
@@ -122,8 +143,11 @@ class Spinner(object):
         match self.state_type:
             case 'two_exposed_ends':
                 return 111
+            case 'one_state':
+                return 1
             case _:
                 raise Exception('Invalid state type')
+
 
     def calc_score_totals(self):
         return np.sum(self.scores_by_round, axis=0)
@@ -189,13 +213,16 @@ class Spinner(object):
             self.next_player()
 
         # update round scores
-        round_scores = [p.get_score() for p in self.players]
-        self.scores_by_round[self.round] = round_scores
+        self.update_round_scores()
 
         if self.verbose:
             print(f'Round {self.round} finished\n'
                   f'Scores for round\n'
-                  f'{round_scores}\n')
+                  f'{self.scores_by_round[self.round]}\n')
+
+    def update_round_scores(self):
+        round_scores = [p.get_score() for p in self.players]
+        self.scores_by_round[self.round] = round_scores
 
     def next_player(self) -> None:
         current_player_index = self.current_player.id

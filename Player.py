@@ -151,7 +151,8 @@ class Player:
             self.hand.append(new_tile)
             self.sort_hand()
         else:
-            print('Boneyard empty!!!!!!!!!!')
+            pass
+            # print('Boneyard empty!!!!!!!!!!')
 
     def place_tile_from_hand(self, action):
         """

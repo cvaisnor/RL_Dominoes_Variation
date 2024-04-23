@@ -55,7 +55,7 @@ class Board:
                     if tile.is_double:
                         self.tiles.append(tile)
                     else:
-                        print(f'exp_double={self.exposed_double} exp ends={self.exposed_ends}')
+                        # print(f'exp_double={self.exposed_double} exp ends={self.exposed_ends}')
                         self.add_tile_adjust_exposed_ends(tile, end_value)
                 else:
                     raise Exception(f'Board.receive_tile error.'
