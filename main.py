@@ -12,7 +12,7 @@ def main():
               'allow_chickenfeet':  False,
               'initial_hand_size':  7,
               'end_round':          0,
-              'state_type':         'one_state',
+              'state_type':         'two_exposed_ends',
               'action_space_type':  'hl',
               'players': [{'id': 0, 'strategy': 'agent', 'verbose': False},
                           {'id': 1, 'strategy': 'random', 'verbose': False},
@@ -24,33 +24,35 @@ def main():
     
     game = Spinner(params)
 
-    AGENTS = 1
-    EPISODES = 200
+    AGENTS = 10
+    EPISODES = 3000
     ALPHA = 0.3
     EPSILON = 0.2
     GAMMA = 0.99
+    EPS_TO_ZERO_AT = 1250
     wins = np.zeros((AGENTS, EPISODES))
     for a in range(AGENTS):
-        agent = QAgent(game, alpha=ALPHA, epsilon=EPSILON, gamma=GAMMA)
-        q_table, reward, wins[a, :] = agent.learn(episodes=EPISODES)
+        agent = QAgent(game, alpha=ALPHA, epsilon=EPSILON, gamma=GAMMA, eps_to_zero_at=EPS_TO_ZERO_AT, verbose=False)
+        wins[a, :] = agent.learn(episodes=EPISODES)
 
     win_percentages = wins.cumsum(axis=1) / (np.arange(wins.shape[1]) + 1)
 
     avg_win_percentages = np.mean(win_percentages, axis=0)
     plt.plot(avg_win_percentages)
     plt.axhline(y=0.5, color='r', linestyle='--')
+    if EPS_TO_ZERO_AT:
+        plt.axvline(x=EPS_TO_ZERO_AT, color='g', linestyle='--')
     plt.ylim([0, 1])
     plt.xlabel('Episodes')
     plt.ylabel('Average win percentage')
     plt.title(f'Average win percentage for {AGENTS} agents\n'
-              f'Alpha: {ALPHA} Epsilon: {EPSILON} Gamma: {GAMMA}')
+              f'\u03B1: {ALPHA}  \u03f5: {EPSILON}  \u03B3: {GAMMA}  \u03F5\u21920 @ {EPS_TO_ZERO_AT}')
     plt.show()
 
     # wins_per_last_30 = rolling_sum(np.mean(wins, axis=0), 100)
     # plt.plot(wins_per_last_30)
     # plt.show()
 
-    print(q_table)
 
 
 
