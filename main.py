@@ -3,13 +3,12 @@ from Spinner import Spinner
 import numpy as np
 from matplotlib import pyplot as plt
 
-
 def main():
 
     STATE_SPACE_MODELS = {1: 'one_state',
                           2: 'two_exposed_ends'}
 
-    params = {'max_pips':           5,
+    params = {'max_pips':           9,
               'spinners':           False,
               'allow_chickenfeet':  False,
               'initial_hand_size':  7,
@@ -21,54 +20,69 @@ def main():
                           #{'id': 2, 'strategy': 'random', 'verbose': False},
                           ],
               'verbose': False}
-
-
     
+    print('Initializing Spinner game with the following parameters:')
+    print(params)
+    print()
     game = Spinner(params)
 
-    AGENTS = 10
-    EPISODES = 2000
+    NUM_AGENTS = 10
+    NUM_EPISODES = 2000
     ALPHA = 0.3
     EPSILON = 0.2
-    GAMMA = 0.99
-    EPS_TO_ZERO_AT = None
-    wins = np.zeros((AGENTS, EPISODES))
-    for a in range(AGENTS):
+    GAMMA = 0.93
+    EPS_TO_ZERO_AT = 750
+    wins = [] # wins is a list of lists, [[0, 1, 0] ... [1, 1, 1]]
+    print(f'Training {NUM_AGENTS} agents for {NUM_EPISODES} episodes with alpha={ALPHA}, epsilon={EPSILON}, gamma={GAMMA}, eps_to_zero_at={EPS_TO_ZERO_AT}')
+    print()
+    for a in range(NUM_AGENTS):
         agent = QAgent(game, alpha=ALPHA, epsilon=EPSILON, gamma=GAMMA, eps_to_zero_at=EPS_TO_ZERO_AT, verbose=False)
-        wins[a, :] = agent.learn(episodes=EPISODES)
+        print(f'Agent {a} learning...')
+        wins.append(agent.learn(NUM_EPISODES))
 
-    win_percentages = wins.cumsum(axis=1) / (np.arange(wins.shape[1]) + 1)
+    print()
+    print('Finished training agents, plotting...')
 
-    avg_win_percentages = np.mean(win_percentages, axis=0)
-    plt.figure(figsize=(8, 4))
-    plt.plot(avg_win_percentages)
-    plt.axhline(y=0.5, color='r', linestyle='--')
-    if EPS_TO_ZERO_AT:
-        plt.axvline(x=EPS_TO_ZERO_AT, color='g', linestyle='--')
-    plt.ylim([0, 1])
-    plt.xlabel('Episodes')
-    plt.ylabel('Average win percentage')
-    plt.title(f'Average win percentage for {AGENTS} agents\n'
-              f'\u03B1: {ALPHA}  \u03f5: {EPSILON}  \u03B3: {GAMMA}  \u03F5\u21920 @ {EPS_TO_ZERO_AT}\n'
-              f'State Model: {params["state_type"]}  Action Model: {params["action_space_type"]}',
-                 fontsize=12)
-    plt.subplots_adjust(top=.8)
+    ROLLING_WINDOW = 100
+    plot_wins(params, wins, ROLLING_WINDOW, NUM_AGENTS, NUM_EPISODES, ALPHA, EPSILON, GAMMA, EPS_TO_ZERO_AT)
+    
 
+def plot_wins(params, wins, rolling_window, num_agents, num_episodes, alpha, epsilon, gamma, eps_to_zero_at):
+    
+    # for each agent, get the rolling average of wins
+    rolling_wins = []
+    for a in range(num_agents):
+        rolling_wins.append(np.convolve(wins[a], np.ones((rolling_window,))/rolling_window, mode='valid'))
+
+    # get the average of the rolling averages
+    avg_rolling_wins = np.mean(rolling_wins, axis=0)
+
+    # find the max average rolling wins
+    max_avg_rolling_wins = np.max(avg_rolling_wins)
+    max_avg_rolling_wins_index = np.argmax(avg_rolling_wins)
+
+    print(f'Percentage of wins for the last {rolling_window} episodes: {avg_rolling_wins[-1]}')
+    print(f'Max Average Rolling Wins: {max_avg_rolling_wins} at episode {max_avg_rolling_wins_index}')
+
+    # plot the average rolling wins
+    plt.figure(figsize=(10, 5)) # make the plot bigger
+    plt.plot(avg_rolling_wins)
+    plt.title(f'Rolling Average Win Rate for {num_agents} Agents for {num_episodes} episodes ' + '\n' + f'Alpha: {alpha}, Epsilon: {epsilon}, Gamma: {gamma}, Eps_to_Zero_at: {eps_to_zero_at}, Rolling Window: {rolling_window}', fontsize=12)
+    plt.xlabel('Episode', fontsize=12)
+    plt.ylabel('Percentage Wins', fontsize=12)
+    plt.axhline(y=0.5, color='g', linestyle='--') # add a horizontal line at 0.5
+
+    # vertical line at eps_to_zero_at
+    plt.axvline(x=eps_to_zero_at, color='g', linestyle='--')
+
+    # vertical line at the max average rolling wins
+    plt.axvline(x=max_avg_rolling_wins_index, color='r', linestyle='--')
+    plt.text(max_avg_rolling_wins_index, max_avg_rolling_wins, f'Max: {max_avg_rolling_wins * 100:.2f}%', fontsize=12)
+    # save the plot with the parameters in the filename
+    plt.savefig(f'figures/avg_rolling_wins_{num_agents}_agents_{num_episodes}_episodes_alpha_{alpha}_epsilon_{epsilon}_gamma_{gamma}_eps_to_zero_at_{eps_to_zero_at}.png')
     plt.show()
 
-    # wins_per_last_30 = rolling_sum(np.mean(wins, axis=0), 100)
-    # plt.plot(wins_per_last_30)
-    # plt.show()
 
-
-
-
-def rolling_sum(array, window):
-    """
-    Accepts a numpy array and a window size and returns a numpy array that is a rolling sum of size window.
-    The first window elements are the cumulative sum of the elements in the array
-    """
-    return np.convolve(array, np.ones(window), 'full')[:len(array)]
 
 if __name__ == '__main__':
     main()
