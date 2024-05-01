@@ -1,6 +1,5 @@
 # Simplified Dominoes Variation for RL
 
-# Rules
 ## Tiles
 - Range [0-9, 0-9]
 - Example for [0-3]
