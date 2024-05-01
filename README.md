@@ -1,9 +1,5 @@
 # Simplified Dominoes Variation for RL
 
-Relevant [article](https://medium.com/@axegggl/dominoes-game-with-simple-ai-in-python-df7f62feab4).
-
-Revelant [pygame version of dominoes](https://www.pygame.org/project-Dominos-1119-.html).
-
 # Rules
 ## Tiles
 - Range [0-9, 0-9]
